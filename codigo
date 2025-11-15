@@ -1,0 +1,135 @@
+import numpy as np
+import scipy.signal as signal
+import matplotlib.pyplot as plt
+import warnings
+import io # Necesario para leer el string
+
+# Ignorar advertencias si log10(0) ocurre
+warnings.filterwarnings('ignore', 'divide by zero encountered in log10')
+
+print("Iniciando script de análisis de Respuesta en Frecuencia (Parte 1)...")
+
+# -------------------------------------------------------------------
+# --- 1. Cargar la Respuesta al Impulso (h[n]) ---
+#
+# ¡YA NO NECESITAMOS UN ARCHIVO!
+# Usamos los datos que pegaste en el chat.
+# -------------------------------------------------------------------
+
+# Estos son los números que proporcionaste
+datos_impulso_string = """
+0.00671345623592002	0.00349326998467959	-0.000861846356611661	-0.005978111650822	-0.0113107765451497
+-0.0161842496330829	-0.0198527044348853	-0.0215757265779651	-0.0207012744333016	-0.0167467646668343
+-0.00946868835845063	0.00108808121175401	0.0145682512228113	0.0303154915503548	0.0474139477256069
+0.0647589335931474	0.0811504076506396	0.0954000354898361	0.106440838965397	0.113427870350358
+0.115819117353197	0.113427870350358	0.106440838965397	0.0954000354898361	0.0811504076506396
+0.0647589335931474	0.0474139477256069	0.0303154915503548	0.0145682512228113	0.00108808121175401
+-0.00946868835845063	-0.0167467646668343	-0.0207012744333016	-0.0215757265779651	-0.0198527044348853
+-0.0161842496330829	-0.0113107765451497	-0.005978111650822	-0.000861846356611661	0.00349326998467959
+0.00671345623592002
+"""
+
+try:
+    # Usamos np.fromstring para leer los números del string
+    # 'sep' puede ser un espacio ' ' o un tabulador '\t'
+    h_n = np.fromstring(datos_impulso_string, sep='\t')
+    
+    # Si están separados por espacios en lugar de tabs, intentamos con espacios
+    if len(h_n) <= 1:
+        h_n = np.fromstring(datos_impulso_string, sep=' ')
+        
+    print(f"Respuesta al impulso h[n] cargada desde el texto (Longitud={len(h_n)}).")
+    
+    if len(h_n) != 41:
+        print(f"Advertencia: Se esperaban 41 muestras, pero se cargaron {len(h_n)}.")
+        if len(h_n) == 0:
+            raise ValueError("No se pudieron cargar datos desde el string.")
+            
+except Exception as e:
+    print(f"Error: No se pudieron procesar los números que pegaste.")
+    print(f"Detalle: {e}")
+    exit()
+
+# -------------------------------------------------------------------
+# --- LUGAR PARA AJUSTAR PARÁMETROS DEL BARRIDO ---
+#
+# f_min_norm: La frecuencia más baja a probar (ej. 0.005)
+# f_max_norm: La frecuencia más alta a probar (siempre 0.5)
+# num_puntos: Cuántos puntos calcular (más puntos = gráfica más suave)
+#
+# -------------------------------------------------------------------
+f_min_norm = 0.005
+f_max_norm = 0.5
+num_puntos = 50
+# -------------------------------------------------------------------
+
+# Genera el vector de frecuencias espaciadas logarítmicamente
+freqs_to_test = np.logspace(np.log10(f_min_norm), np.log10(f_max_norm), num=num_puntos)
+
+# --- 2. Parámetros de simulación ---
+A_in = 1.0
+n_samples = 2000
+n = np.arange(n_samples)
+
+results_gain_db = []
+
+print(f"Iniciando simulación con barrido logarítmico de {num_puntos} puntos.")
+print(f"Probando desde f_norm={freqs_to_test[0]:.4f} hasta f_norm={freqs_to_test[-1]:.4f}")
+
+# --- 3. Bucle de simulación ---
+for f_norm in freqs_to_test:
+    
+    x_n = A_in * np.cos(2 * np.pi * f_norm * n)
+    
+    #
+    # >>>>> ¡AQUÍ ES DONDE SE USA EL FILTRO (h_n)! <<<<<
+    #
+    y_n = signal.convolve(x_n, h_n, mode='same')
+    
+    stable_part_start = n_samples // 2
+    A_out = np.max(np.abs(y_n[stable_part_start:]))
+    
+    if A_out == 0:
+        gain_db = -np.inf
+    else:
+        gain = A_out / A_in
+        gain_db = 20 * np.log10(gain)
+        
+    results_gain_db.append(gain_db)
+
+print("Simulación completada. Generando gráfica...")
+
+# --- 4. Graficar los resultados ---
+plt.figure(figsize=(12, 7))
+plt.plot(freqs_to_test, results_gain_db, 'b-', label='Ganancia Medida', linewidth=2)
+plt.xscale('log') # Eje X en escala logarítmica
+
+# --- 5. Calcular y dibujar líneas de corte ---
+max_gain = np.max(results_gain_db[0:5]) 
+cutoff_db = max_gain - 3.0
+
+plt.axhline(y=max_gain, color='r', linestyle='--', label=f'Ganancia Máx (Banda de Paso): {max_gain:.2f} dB')
+plt.axhline(y=cutoff_db, color='g', linestyle='--', label=f'Nivel de Corte (-3 dB): {cutoff_db:.2f} dB')
+
+try:
+    cutoff_index = np.where(np.array(results_gain_db) < cutoff_db)[0][0]
+    cutoff_freq = freqs_to_test[cutoff_index]
+    
+    plt.axvline(x=cutoff_freq, color='g', linestyle=':', label=f'Frecuencia de Corte (aprox): {cutoff_freq:.4f}', linewidth=2)
+    print(f"\nFrecuencia de corte (-3dB) estimada en: f_norm = {cutoff_freq:.4f}")
+except IndexError:
+    print("\nNo se pudo determinar la frecuencia de corte.")
+
+# --- 6. Finalizar y mostrar la gráfica ---
+plt.title('Respuesta en Frecuencia (Eje Logarítmico)', fontsize=16)
+plt.xlabel('Frecuencia Normalizada (f / fs) - Escala Logarítmica', fontsize=12)
+plt.ylabel('Ganancia (dB)', fontsize=12)
+plt.legend()
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+plt.savefig('filtro_respuesta_frecuencia_log.png')
+print("Gráfica 'filtro_respuesta_frecuencia_log.png' generada.")
+
+plt.show() # Muestra la gráfica en una ventana
+
+print("Script finalizado.")
