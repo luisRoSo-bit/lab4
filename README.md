@@ -47,13 +47,10 @@ warnings.filterwarnings('ignore', 'divide by zero encountered in log10')
 print("Iniciando script de análisis de Respuesta en Frecuencia (Parte 1)...")
 
 # -------------------------------------------------------------------
-# --- 1. Cargar la Respuesta al Impulso (h[n]) ---
-#
-# ¡YA NO NECESITAMOS UN ARCHIVO!
-# Usamos los datos que pegaste en el chat.
+# --- 1. Cargar la Respuesta al Impulso (h[n]) --
 # -------------------------------------------------------------------
 
-# Estos son los números que proporcionaste
+
 datos_impulso_string = """
 0.00671345623592002	0.00349326998467959	-0.000861846356611661	-0.005978111650822	-0.0113107765451497
 -0.0161842496330829	-0.0198527044348853	-0.0215757265779651	-0.0207012744333016	-0.0167467646668343
@@ -222,7 +219,7 @@ import matplotlib.pyplot as plt
 import io  # Para leer texto como si fuera un archivo
 
 # --------------------------------------------------------
-# Cargar los datos de los archivos (coeficientes y escalas)
+# arhcivo
 # --------------------------------------------------------
 
 coef_data_string = """
@@ -337,7 +334,7 @@ import wfdb
 import os
 
 # ------------------------------------------------------------
-# Código de diagnóstico a buscar (#Dx en los .hea)
+# Código de diagnóstico a buscar 
 # ------------------------------------------------------------
 CODE_TO_FIND = "251173003"
 
@@ -347,7 +344,7 @@ CODE_TO_FIND = "251173003"
 ECG_DATABASE_PATH = r"C:\Users\luis.rocha-s\Desktop\trabajos\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords"
 
 # ------------------------------------------------------------
-# Función para aplicar el filtro pasa-banda (VERSIÓN CORREGIDA)
+# Función para aplicar el filtro pasa-banda
 # ------------------------------------------------------------
 def apply_my_filter(signal_in, sos_matrix, scale_values):
     current_signal = signal_in.copy()
@@ -496,7 +493,7 @@ import os
 import pandas as pd
 
 # ------------------------------------------------------------
-#  Código de diagnóstico a buscar (#Dx en los .hea)
+#  Código de diagnóstico a buscar 
 # ------------------------------------------------------------
 CODE_TO_FIND = "251173003"   # Cambia este valor por el código que quieras buscar
 
@@ -517,8 +514,8 @@ def apply_my_filter(signal_in, sos_matrix, scale_values):
     current_signal = signal_in.copy()
     num_sections = sos_matrix.shape[0]
 
-    # --- LÓGICA CORREGIDA ---
-    # 1. Aplicar ganancia inicial (g[0])
+    
+
     current_signal = current_signal * scale_values[0]
 
     for i in range(num_sections):
@@ -534,7 +531,7 @@ def apply_my_filter(signal_in, sos_matrix, scale_values):
     # --- FIN DE LA CORRECCIÓN ---
 
 # ------------------------------------------------------------
-#  Función para buscar el primer ECG con el Dx deseado
+#  Función para buscar el primer ECG 
 # ------------------------------------------------------------
 def find_first_by_dx_code(database_path, diagnosis_code):
     """Busca el primer archivo .hea cuyo campo #Dx contenga diagnosis_code."""
@@ -556,9 +553,7 @@ def find_first_by_dx_code(database_path, diagnosis_code):
     print(f"No se encontró ningún registro con el código {diagnosis_code}.")
     return None, None
 
-# ------------------------------------------------------------
-# Cargar coeficientes del filtro
-# ------------------------------------------------------------
+
 coef_data_string = """
 1   0   -1  1   -1.386664837687 0.783814855173768
 1   0   -1  1   -1.99820224672999   0.998223522033566
